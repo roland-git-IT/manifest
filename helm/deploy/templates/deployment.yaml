@@ -1,61 +1,92 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1                         #
+kind: Deployment                            #
 metadata:
-  name: {{ include "deploy.fullname" . }}
+  name: ghost                               #
   labels:
-    {{- include "deploy.labels" . | nindent 4 }}
+    app: myghost                            #
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: 1                               #
+  
   selector:
     matchLabels:
-      {{- include "deploy.selectorLabels" . | nindent 6 }}
+      app: ghost                            #
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        {{- include "deploy.selectorLabels" . | nindent 8 }}
+        app: ghost                          #
     spec:
-      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "deploy.serviceAccountName" . }}
+      serviceAccountName: 
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: ghostshell                  #
+          securityContext: 
+          image: rolandockit/ginshell:1.0   #
+          imagePullPolicy:
           ports:
-            - name: http
-              containerPort: {{ .Values.service.targetPort }}
+            - name: pythonport              #
+              containerPort: 5000           #
               protocol: TCP
+
           livenessProbe:
+            #Types of probes
+            #First
             httpGet:
               path: /
-              port: http
+              port: 5000                    # Checks HTTP connection on this port
+            #Second
+            tcpSocket:
+              port: 5000                    # Checks TCP connection on this port. For non HTTP servers
+            #Third
+            exec:
+              command:
+                - cat                       #these is an examples. It can be any command
+                - /tmp/healthy              #these is an examples. It can be any command
+            #Should be included with any type of livenessProbe
+            #Note: Don't use initial deley seconds if configuring startupProbe
+            initialDelaySeconds: 3          # How many seconds to wait before starting health checks
+            periodSeconds: 3                # How frequent healthchecks should be performed
+            failureThreshold: 2             # How many consecutive failures before container is considered unhealthy
+          
           readinessProbe:
             httpGet:
               path: /
-              port: http
+              port: 5000
+            initialDelaySeconds: 3          #
+            periodSeconds: 3
+
+          startupProbe:
+            httpGet:
+              path: /
+              port: 5000
+            failureThreshold: 10
+
+          minReadySeconds: 0               #How long since startupProbe passed before the pod is considered Ready
+
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
+            #Resource Request
+            requests:
+              cpu: "100m"                    #This is the amount of cpu that must be available before the scheduler can schedule a container on the node
+              memory: "10Mi"                 #This is the amount of memory that must be available before the scheduler can schedule a container on the node
+            #Resource Limit
+            limits:
+              cpu: "250m"                   #If the container/pod consumes cpu resource exceeding this value, the pod or container will be terminated
+              memory: "25Mi"                #If the container/pod consumes memory resource exceeding this value, the pod or container will be terminated
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
+        nodeAffinity:
+          #Hard affinity
+          requiredDuringSchedulingIgnoredDuringExecution: # A pod with this affinity will never be scheduled on a node that does not match the selector expression
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: cloud.google.com/gke-preemptible
+                  operator: DoesNotExist
+          #Soft affinity
+          preferredDuringSchedulingIgnoredDuringExecution: # This means: "Kubernetes, please schedule this pod on this node if you can; if not, it dosen't matter"
+            - preference:
+                matchExpressions:
+                  - key: cloud.google.com/gke-preemptible
+                    operator: Exists
+              weight: 100
       tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
