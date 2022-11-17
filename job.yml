@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: <Job_name>
+spec:
+  ttlSecondsAfterFinished: 60 #Number of seconds after job is completed to terminate the Pod
+  template:
+    spec:
+      containers:
+        - name: <container_name>
+          image: <image for the container>
+          port:
+            containerPort: 8080
