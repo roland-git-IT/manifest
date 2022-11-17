@@ -1,0 +1,10 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: ghost
+spec:
+  minAvailable: 1           #The value represent the number of pod that should be left available during eviction of pods
+  maxUnavailable: 10%       #The number represents the number of pods will be evicted. eg if the value is 10%, that means only 10% of pods will be evicted
+  selector:
+    matchLabel:
+      app: ghost

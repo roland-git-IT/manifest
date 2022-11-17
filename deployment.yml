@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  labels:
+    app: ghost
+  annotation:
+    ginshell.tk/owner: roland
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+    spec:
+      containers:
+        - name: ghost
+          image: rolandockit/ginshell:1.0
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "50Mi"
+            limits:
+              cpu: "700m"
+              memory: "70Mi"
+          livenessProbe:
+            httpGet:
+              port: 5000
+              path: /
+            #initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /
+              port: 5000
+            failureThreshold: 10
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 5000
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 3
+
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: demo
+#   labels:
+#     app: demo
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: demo
+#   template:
+#     metadata:
+#       labels:
+#         app: demo
+#     spec:
+#       containers:
+#         - name: demo
+#           image: cloudnatived/demo:hello
+#           ports:
+#             - containerPort: 888
+# ...

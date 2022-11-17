@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: demo-limitrange
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "200m"
+        memory: "128Mi"
+      type: Container
+
+# A Container with no specified limit will inherit the values between default and defaultRequest
